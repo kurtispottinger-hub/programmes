@@ -5,6 +5,7 @@ import 'dotenv/config'
 import authRoutes from './routes/auth.js'
 import playerRoutes from './routes/players.js'
 import reportRoutes from './routes/reports.js'
+import reflectionRoutes from './routes/reflection.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -27,6 +28,7 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/players', playerRoutes)
 app.use('/api/reports', reportRoutes)
+app.use('/api/reflection', reflectionRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'Game IQ API' }))
 

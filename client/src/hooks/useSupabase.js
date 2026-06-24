@@ -56,6 +56,41 @@ export function usePlayer(playerId) {
   }, [playerId])
 }
 
+// Fetches the player record for the currently logged-in player user
+export function useMyPlayerProfile(userId) {
+  return useQuery(async () => {
+    if (!userId) return null
+    const { data, error } = await supabase
+      .from('players')
+      .select(`
+        *,
+        users!user_id(name, email),
+        session_notes(id, date, session_type, content, created_at),
+        game_logs(*),
+        homework(*),
+        reports(id, month, year, final_content, sent_at),
+        milestones(*)
+      `)
+      .eq('user_id', userId)
+      .single()
+    if (error) throw error
+    return data
+  }, [userId])
+}
+
+// Fetch the coach user record (for messaging — there's only one coach)
+export function useCoachUser() {
+  return useQuery(async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name')
+      .eq('role', 'coach')
+      .single()
+    if (error) throw error
+    return data
+  })
+}
+
 export function useMessages(userId, otherUserId) {
   return useQuery(async () => {
     if (!userId || !otherUserId) return []
