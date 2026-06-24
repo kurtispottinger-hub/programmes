@@ -78,6 +78,28 @@ export function useMyPlayerProfile(userId) {
   }, [userId])
 }
 
+// Fetches the child's player record for a logged-in parent
+export function useMyChildProfile(parentUserId) {
+  return useQuery(async () => {
+    if (!parentUserId) return null
+    const { data, error } = await supabase
+      .from('players')
+      .select(`
+        *,
+        users!user_id(name, email),
+        session_notes(id, date, session_type, content, created_at),
+        game_logs(*),
+        homework(*),
+        reports(id, month, year, final_content, sent_at),
+        milestones(*)
+      `)
+      .eq('parent_id', parentUserId)
+      .single()
+    if (error) throw error
+    return data
+  }, [parentUserId])
+}
+
 // Fetch the coach user record (for messaging — there's only one coach)
 export function useCoachUser() {
   return useQuery(async () => {

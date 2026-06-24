@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { usePlayer } from '../../hooks/useSupabase'
+import { usePlayer, useMessages } from '../../hooks/useSupabase'
+import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import {
-  ArrowLeft, User, FileText, Gamepad2, BookOpen, BarChart2,
+  ArrowLeft, FileText, Gamepad2, BookOpen, BarChart2,
   MessageCircle, Lock, Plus, Check, X, Edit3, Save, Loader2,
-  Calendar, Award, Star, ChevronDown, ChevronUp, Send
+  Award, Star, ChevronDown, ChevronUp, Send
 } from 'lucide-react'
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   { key: 'homework', icon: BookOpen, label: 'Homework' },
   { key: 'reports', icon: BarChart2, label: 'Reports' },
   { key: 'private', icon: Lock, label: 'Private' },
+  { key: 'messages', icon: MessageCircle, label: 'Messages' },
 ]
 
 function fmt(dateStr) {
@@ -465,6 +467,97 @@ function AwardMilestone({ playerId, refetch }) {
   )
 }
 
+// ─── Coach Messages Tab ───────────────────────────────────────────────────────
+function CoachMessagesTab({ player }) {
+  const { user } = useAuth()
+  const playerUserId = player.user_id
+  const parentUserId = player.parent_id
+
+  const { data: playerMsgs, loading: pl, refetch: refetchPlayer } = useMessages(user?.id, playerUserId)
+  const { data: parentMsgs, loading: pal, refetch: refetchParent } = useMessages(user?.id, parentUserId)
+
+  const [activeThread, setActiveThread] = useState('player')
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const bottomRef = useRef(null)
+
+  const messages = activeThread === 'player' ? playerMsgs : parentMsgs
+  const recipientId = activeThread === 'player' ? playerUserId : parentUserId
+  const threadType = activeThread === 'player' ? 'coach-player' : 'coach-parent'
+  const refetch = activeThread === 'player' ? refetchPlayer : refetchParent
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  async function send(e) {
+    e.preventDefault()
+    if (!text.trim() || !recipientId) return
+    setSending(true)
+    await supabase.from('messages').insert({
+      sender_id: user.id,
+      recipient_id: recipientId,
+      thread_type: threadType,
+      content: text.trim(),
+    })
+    setText('')
+    setSending(false)
+    refetch()
+  }
+
+  const playerName = player.users?.name?.split(' ')[0] || 'Player'
+
+  return (
+    <div className="flex flex-col" style={{ height: 480 }}>
+      {/* Thread selector */}
+      <div className="flex gap-1 p-3 border-b border-gray-50">
+        {[
+          { key: 'player', label: `${playerName} (Player)` },
+          { key: 'parent', label: 'Parent', disabled: !parentUserId },
+        ].map(({ key, label, disabled }) => (
+          <button key={key} onClick={() => !disabled && setActiveThread(key)} disabled={disabled}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+              ${activeThread === key ? 'bg-navy-900 text-white' : 'text-gray-400 hover:text-gray-700'}
+              ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
+        {(pl || pal) && <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-gray-300" /></div>}
+        {!pl && !pal && (!messages || messages.length === 0) && (
+          <div className="text-center py-8">
+            <p className="text-gray-400 text-sm">No messages yet in this thread.</p>
+          </div>
+        )}
+        {messages?.map(msg => {
+          const isOwn = msg.sender_id === user?.id
+          return (
+            <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm
+                ${isOwn ? 'bg-navy-900 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm shadow-sm'}`}>
+                {msg.content}
+              </div>
+            </div>
+          )
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <form onSubmit={send} className="flex gap-2 p-3 border-t border-gray-100">
+        <input value={text} onChange={e => setText(e.target.value)}
+          placeholder={`Message ${activeThread === 'player' ? playerName : 'parent'}...`}
+          className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-navy-900/30" />
+        <button type="submit" disabled={!text.trim() || sending || !recipientId}
+          className="w-10 h-10 bg-navy-900 rounded-xl flex items-center justify-center hover:bg-navy-800 active:scale-95 transition-all disabled:opacity-30">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // ─── Main Player Profile ──────────────────────────────────────────────────────
 export default function PlayerProfile() {
   const { playerId } = useParams()
@@ -563,12 +656,13 @@ export default function PlayerProfile() {
       </div>
 
       {/* Tab content */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+      <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm ${tab === 'messages' ? '' : 'p-5'}`}>
         {tab === 'notes' && <NotesTab player={player} refetch={refetch} />}
         {tab === 'games' && <GamesTab player={player} />}
         {tab === 'homework' && <HomeworkTab player={player} refetch={refetch} />}
         {tab === 'reports' && <ReportsTab player={player} refetch={refetch} />}
         {tab === 'private' && <PrivateTab player={player} refetch={refetch} />}
+        {tab === 'messages' && <CoachMessagesTab player={player} />}
       </div>
     </div>
   )
