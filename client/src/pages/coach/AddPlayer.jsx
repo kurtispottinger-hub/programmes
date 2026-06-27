@@ -31,9 +31,13 @@ export default function AddPlayer() {
     setLoading(true)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/auth/add-player', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify(form),
       })
       const data = await res.json()
@@ -88,22 +92,22 @@ export default function AddPlayer() {
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">First Name *</label>
               <input value={form.firstName} onChange={update('firstName')} required placeholder="e.g. Marcus"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Last Name *</label>
               <input value={form.lastName} onChange={update('lastName')} required placeholder="e.g. Johnson"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Age</label>
               <input type="number" value={form.age} onChange={update('age')} placeholder="e.g. 12" min={5} max={18}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Position</label>
               <select value={form.position} onChange={update('position')}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60">
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60">
                 <option value="">Select position</option>
                 {POSITIONS.map(p => <option key={p}>{p}</option>)}
               </select>
@@ -131,18 +135,18 @@ export default function AddPlayer() {
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Player Email (leave blank to use parent email)</label>
               <input type="email" value={form.playerEmail} onChange={update('playerEmail')} placeholder="player@example.com"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">Parent Name *</label>
                 <input value={form.parentName} onChange={update('parentName')} required placeholder="e.g. Sarah Johnson"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">Parent Email *</label>
                 <input type="email" value={form.parentEmail} onChange={update('parentEmail')} required placeholder="parent@example.com"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20" />
               </div>
             </div>
           </div>
