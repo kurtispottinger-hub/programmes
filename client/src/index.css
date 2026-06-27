@@ -22,6 +22,10 @@
   #root {
     min-height: 100svh;
   }
+
+  input, select, textarea, option {
+    color: #111827;
+  }
 }
 
 @layer components {
